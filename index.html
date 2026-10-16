@@ -7,6 +7,8 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -46,6 +48,28 @@
         }
         .toast-enter { animation: slideIn 0.3s ease-out forwards; }
         .toast-exit { animation: fadeOut 0.3s ease-out forwards; }
+
+        /* QR Scanner Overrides */
+        #reader { border: none !important; }
+        #reader button {
+            background-color: #3b82f6 !important; /* blue-500 */
+            color: white !important;
+            border: none !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.5rem !important;
+            margin-top: 0.5rem !important;
+            cursor: pointer;
+        }
+        #reader select {
+            background-color: #1e293b !important; /* slate-800 */
+            color: white !important;
+            border: 1px solid #475569 !important;
+            padding: 0.5rem !important;
+            border-radius: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        #reader__dashboard_section_csr span { color: #cbd5e1 !important; }
+        #reader__dashboard_section_swaplink { color: #60a5fa !important; text-decoration: none !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 sm:p-8">
@@ -70,11 +94,16 @@
                     <span class="text-xs text-slate-500 mb-1">Your Connection ID</span>
                     <span id="my-id" class="text-emerald-400 font-mono text-sm truncate font-medium">Generating...</span>
                 </div>
-                <button onclick="copyMyId()" class="p-2 hover:bg-slate-700 rounded-md transition-colors text-slate-300" title="Copy ID">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                    </svg>
-                </button>
+                <div class="flex items-center gap-1">
+                    <button onclick="showMyQR()" class="p-2 hover:bg-slate-700 rounded-md transition-colors text-slate-300" title="Show QR Code">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                    </button>
+                    <button onclick="copyMyId()" class="p-2 hover:bg-slate-700 rounded-md transition-colors text-slate-300" title="Copy ID">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -82,7 +111,12 @@
         <section id="connect-section" class="glass-panel p-6 rounded-2xl shadow-xl transition-all duration-300">
             <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Connect to Friend</h2>
             <div class="flex flex-col gap-3">
-                <input type="text" id="peer-id-input" placeholder="Paste friend's ID here..." class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+                <div class="flex gap-2">
+                    <input type="text" id="peer-id-input" placeholder="Paste friend's ID here..." class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+                    <button onclick="startQRScanner()" class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 rounded-lg transition-colors flex items-center justify-center shrink-0" title="Scan QR Code">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                </div>
                 <button onclick="connectToPeer()" id="connect-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
@@ -154,6 +188,30 @@
         </section>
     </main>
 
+    <!-- QR Code Display Modal -->
+    <div id="qr-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="glass-panel p-8 rounded-2xl shadow-xl flex flex-col items-center max-w-sm w-full relative">
+            <button onclick="closeQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h3 class="text-lg font-semibold text-white mb-6">Your QR Code</h3>
+            <div id="qrcode" class="bg-white p-4 rounded-xl mb-6 shadow-inner"></div>
+            <p class="text-sm text-slate-400 text-center">Have your friend scan this code to connect directly.</p>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="scanner-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex-col items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="glass-panel p-6 rounded-2xl shadow-xl flex flex-col items-center max-w-md w-full relative">
+            <button onclick="closeScannerModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white z-10 bg-slate-800 rounded-full p-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h3 class="text-lg font-semibold text-white mb-4 w-full text-center">Scan QR Code</h3>
+            <div id="reader" class="w-full bg-slate-800/50 rounded-xl overflow-hidden min-h-[300px] flex items-center justify-center relative"></div>
+            <p class="text-sm text-slate-400 text-center mt-6">Point your camera at a friend's ZeroShare QR code.</p>
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed bottom-4 left-0 right-0 flex flex-col items-center gap-2 pointer-events-none z-50 px-4"></div>
 
@@ -187,6 +245,12 @@
         const toastContainer = document.getElementById('toast-container');
         const connectBtn = document.getElementById('connect-btn');
         const sendBtn = document.getElementById('send-btn');
+
+        // QR Elements
+        const qrModal = document.getElementById('qr-modal');
+        const scannerModal = document.getElementById('scanner-modal');
+        let html5QrcodeScanner = null;
+        let qrCodeInstance = null;
 
         // --- Utility Functions ---
         function formatBytes(bytes, decimals = 2) {
@@ -250,6 +314,88 @@
                 console.error('Failed to copy: ', err);
                 showToast('Failed to copy ID', 'error');
             }
+        }
+
+        // --- STREAMING_CHUNK:QR Code Logic... ---
+        function showMyQR() {
+            if (!peer || !peer.id) return;
+            
+            qrModal.classList.remove('hidden');
+            setTimeout(() => {
+                qrModal.classList.remove('opacity-0');
+                qrModal.classList.add('opacity-100');
+            }, 10);
+            
+            if (!qrCodeInstance) {
+                qrCodeInstance = new QRCode(document.getElementById("qrcode"), {
+                    text: peer.id,
+                    width: 220,
+                    height: 220,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            } else {
+                qrCodeInstance.clear();
+                qrCodeInstance.makeCode(peer.id);
+            }
+        }
+
+        function closeQRModal() {
+            qrModal.classList.remove('opacity-100');
+            qrModal.classList.add('opacity-0');
+            setTimeout(() => {
+                qrModal.classList.add('hidden');
+            }, 300);
+        }
+
+        function startQRScanner() {
+            scannerModal.classList.remove('hidden');
+            setTimeout(() => {
+                scannerModal.classList.remove('opacity-0');
+                scannerModal.classList.add('opacity-100');
+            }, 10);
+            
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "reader", { 
+                        fps: 10, 
+                        qrbox: {width: 250, height: 250}, 
+                        aspectRatio: 1.0,
+                        showTorchButtonIfSupported: true
+                    }, 
+                    false
+                );
+            }
+            
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+        }
+
+        function closeScannerModal() {
+            scannerModal.classList.remove('opacity-100');
+            scannerModal.classList.add('opacity-0');
+            setTimeout(() => {
+                scannerModal.classList.add('hidden');
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.clear().catch(error => {
+                        console.error("Failed to clear scanner", error);
+                    });
+                }
+            }, 300);
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            closeScannerModal();
+            
+            document.getElementById('peer-id-input').value = decodedText;
+            showToast('QR Code scanned!', 'success');
+            
+            // Auto-connect after a brief delay
+            setTimeout(() => connectToPeer(), 500);
+        }
+
+        function onScanError(errorMessage) {
+            // Suppress errors as it throws continuously when QR is not yet found
         }
 
         // --- STREAMING_CHUNK:Initializing PeerJS Network... ---
